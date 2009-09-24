@@ -1,0 +1,4 @@
+content	alertcheck	content/
+locale	alertcheck	en-US	locale/en-US/
+skin	alertcheck	classic/1.0	skin/
+overlay	chrome://browser/content/browser.xul	chrome://alertcheck/content/alertCheck.xul
