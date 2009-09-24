@@ -18,10 +18,14 @@ var alertcheck = {
     document.getElementById('content').contentWindow.wrappedJSObject.alert = function(alert_text) {
       //This could probably use some i18n.  But this'll do for now.
       promptService.alertCheck(window, "[JavaScript Application]",
-                              alert_text,"Suppress more dialogs from this page?",check);
+                              alert_text,"Suppress more modal dialogs from this page?",check);
       //If the user checked the box, suppress alerts.
       if (check.value) {
-         document.getElementById('content').contentWindow.wrappedJSObject.alert = function() {};
+         document.getElementById('content').contentWindow.wrappedJSObject.alert = function() { throw("Alerts are suppressed");};
+         document.getElementById('content').contentWindow.wrappedJSObject.prompt = function() { throw("Prompts are suppressed");};
+         document.getElementById('content').contentWindow.wrappedJSObject.confirm = function() { throw("Confirms are suppressed");};
+
+
       }
     }
   }
