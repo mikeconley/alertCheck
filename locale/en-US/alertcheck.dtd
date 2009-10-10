@@ -1,1 +1,7 @@
-<!ENTITY alertcheck.label "Your localized menuitem">
+<!ENTITY alertcheck.suppress_alert "Suppress more alert dialogs from this page?">
+<!ENTITY alertcheck.alerts_suppressed "Alerts are suppressed.">
+
+<!ENTITY alertcheck.suppress_confirm "Suppress more confirm dialogs from this page?">
+<!ENTITY alertcheck.confirms_suppressed "Confirms are suppressed.">
+
+<!ENTITY alertcheck.suppress_prompt "Suppress more prompt dialogs from this page?"><!ENTITY alertcheck.prompts_suppressed "Prompts are suppressed.">

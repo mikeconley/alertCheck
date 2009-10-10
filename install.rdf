@@ -4,7 +4,7 @@
   <Description about="urn:mozilla:install-manifest">
     <em:id>alertcheck@mike.conley</em:id>
     <em:name>AlertCheck</em:name>
-    <em:version>0.4a</em:version>
+    <em:version>0.5a</em:version>
     <em:creator>Mike Conley</em:creator>
     <em:targetApplication>
       <Description>
