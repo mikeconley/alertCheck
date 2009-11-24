@@ -1,5 +1,6 @@
 content	alertcheck	content/
 locale	alertcheck	en-US	locale/en-US/
 locale  alertcheck      ru-RU   locale/ru-RU/
+locale  alertcheck      fr-FR   locale/fr-FR/
 skin	alertcheck	classic/1.0	skin/
 overlay	chrome://browser/content/browser.xul	chrome://alertcheck/content/alertCheck.xul
