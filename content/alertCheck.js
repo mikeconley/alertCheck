@@ -23,16 +23,21 @@ if(!alertcheck) {
     onLoad: function() {
       // initialization code
       this.initialized = true;
+      this.activated = false;
       var appcontent = document.getElementById("appcontent");
       if(appcontent) {
         //Wait for the DOM to load, and then activate alertCheck
+        appcontent.addEventListener("DOMWillOpenModalDialog", alertcheck.app.activate, true);
         appcontent.addEventListener("DOMContentLoaded", alertcheck.app.activate, true);
       }
     },
     activate: function(e) {
-      alertcheck.app.attachToAlert();
-      alertcheck.app.attachToConfirm();
-      alertcheck.app.attachToPrompt();
+      if(!this.activated) {
+        alertcheck.app.attachToAlert();
+        alertcheck.app.attachToConfirm();
+        alertcheck.app.attachToPrompt();
+      }
+      this.activated = true;
     },
     attachToAlert: function() {   
       //This next line, where I mess with wrappedJSObject, is a security no-no according to
