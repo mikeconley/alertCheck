@@ -23,7 +23,6 @@ if(!alertcheck) {
     onLoad: function() {
       // initialization code
       this.initialized = true;
-      this.activated = false;
       var appcontent = document.getElementById("appcontent");
       if(appcontent) {
         //Wait for the DOM to load, and then activate alertCheck
@@ -32,12 +31,9 @@ if(!alertcheck) {
       }
     },
     activate: function(e) {
-      if(!this.activated) {
         alertcheck.app.attachToAlert();
         alertcheck.app.attachToConfirm();
         alertcheck.app.attachToPrompt();
-      }
-      this.activated = true;
     },
     attachToAlert: function() {   
       //This next line, where I mess with wrappedJSObject, is a security no-no according to
