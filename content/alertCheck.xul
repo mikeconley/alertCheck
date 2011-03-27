@@ -2,5 +2,6 @@
 <?xml-stylesheet href="chrome://alertcheck/skin/overlay.css" type="text/css"?>
 <overlay id="alertcheck-overlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-  <script src="alertCheck.js"/> 
+  <script type="application/x-javascript" src="chrome://alertcheck/content/alertCheck.js"/> 
 </overlay>
+

@@ -1,98 +1,158 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is alertCheck.
+ *
+ * The Initial Developer of the Original Code is
+ *   Mike Conley <mconley@mozillamessaging.com>.
+ * Portions created by the Initial Developer are Copyright (C) 2___
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
 /* Let's set up a namespace... */
 
-if(!alertcheck) {
-  
-  var alertcheck = {};
-  
-  if(!alertcheck.locale_vars) {
-    var localeService = Components.classes["@mozilla.org/intl/nslocaleservice;1"].getService(Components.interfaces["nsILocaleService"]);
-    var bundleService = Components.classes["@mozilla.org/intl/stringbundle;1"].getService(Components.interfaces["nsIStringBundleService"]);  
+if ("undefined" == typeof(alertcheck)) {
+  let Cc = Components.classes;
+  let Ci = Components.interfaces;
 
-   /* Seems funny that I need all of these services just to pull in some I18n... 
-    * Anyhow, I figured out how to do this from checking out the Firebug code.
-    */ 
-    alertcheck.vars = {
-      stringBundle: bundleService.createBundle("chrome://alertcheck/locale/alertcheck.properties", localeService.getApplicationLocale()),
-      promptService: Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService)
+  var alertcheck = new function() {
+
+    let localeService = Cc["@mozilla.org/intl/nslocaleservice;1"]
+                        .getService(Ci.nsILocaleService);
+    let bundleService = Cc["@mozilla.org/intl/stringbundle;1"]
+                        .getService(Ci.nsIStringBundleService);
+
+    let promptFactory = Cc["@mozilla.org/prompter;1"]
+                        .getService(Ci.nsIPromptFactory);
+
+    let stringBundle = bundleService
+                       .createBundle("chrome://alertcheck/locale/alertcheck.properties",
+                                     localeService.getApplicationLocale());
+
+    // A quick and dirty way to get translation strings...
+    function _(some_string) {
+      return stringBundle.GetStringFromName(some_string);
     }
-  }
 
- if(!alertcheck.app) {
-
-  alertcheck.app = {
-    onLoad: function() {
-      // initialization code
-      this.initialized = true;
-      var appcontent = document.getElementById("appcontent");
-      if(appcontent) {
+    function onLoad() {
+      let appcontent = document.getElementById("appcontent");
+      if (appcontent) {
         //Wait for the DOM to load, and then activate alertCheck
-        appcontent.addEventListener("DOMWillOpenModalDialog", alertcheck.app.activate, true);
-        appcontent.addEventListener("DOMContentLoaded", alertcheck.app.activate, true);
+        appcontent.addEventListener("DOMWillOpenModalDialog", arm, true);
+        appcontent.addEventListener("DOMContentLoaded", arm, true);
       }
-    },
-    activate: function(e) {
-        alertcheck.app.attachToAlert();
-        alertcheck.app.attachToConfirm();
-        alertcheck.app.attachToPrompt();
-    },
-    attachToAlert: function() {   
-      //This next line, where I mess with wrappedJSObject, is a security no-no according to
-      //https://developer.mozilla.org/En/Working_with_windows_in_chrome_code#Accessing_content_documents
-      //But, so far, it's the only way I've found that lets me override alert();.
-      document.getElementById('content').contentWindow.wrappedJSObject.alert = function(alert_text) {
-        var check = {value: false};   
-        alertcheck.vars.promptService.alertCheck(window, "[JavaScript Application]",
-                              alert_text, alertcheck.app.getString("alertCheckSuppressAlert"), check);
-        //If the user checked the box, suppress alerts.
-        if (check.value) {
-          document.getElementById('content').contentWindow.wrappedJSObject.alert = function() { 
-            throw(alertcheck.app.getString("alertCheckAlertsSuppressed"));
-            document.getElementById('content').contentWindow.wrappedJSObject = null;
-          };
-        } 
+    }
+
+    function onUnload() {
+      let appcontent = document.getElementById("appcontent");
+      if (appcontent) {
+        appcontent.removeEventListener("DOMWillOpenModalDialog", arm, true);
+        appcontent.removeEventListener("DOMContentLoaded", arm, true);
       }
-    },
-    attachToConfirm: function() {
-      document.getElementById('content').contentWindow.wrappedJSObject.confirm = function(confirm_text) {
-        var check = {value: false};   
-        var response = alertcheck.vars.promptService.confirmCheck(window, "",
-                              confirm_text,alertcheck.app.getString("alertCheckSuppressConfirm"),check);
-        //If the user checked the box, suppress confirms.
+    }
+
+    // Attach alertCheck to alert, confirm and prompt...
+    function arm() {
+      attachToAlert();
+      attachToPrompt();
+      attachToConfirm();
+    }
+
+    function getWrappedJSObject() {
+      return document.getElementById('content').contentWindow
+             .wrappedJSObject;
+    }
+
+    function attachTo(dialog_type, func) {
+      getWrappedJSObject()[dialog_type] = func;
+    }
+
+    function attachToAlert() {
+      attachTo('alert', function(message) {
+        let prompt = getTabModalPrompt();
+        var check = {value: false};
+        let args = ["[JavaScript Application]", message, _("alertCheckSuppressAlert"),
+                    check];
+        prompt.alertCheck.apply(null, args);
         if (check.value) {
-          document.getElementById('content').contentWindow.wrappedJSObject.confirm = function() { 
-            throw(alertcheck.app.getString("alertCheckConfirmsSuppressed"));
-          };
+          attachTo('alert', function(message) { 
+            throw(_("alertCheckAlertsSuppressed"));
+          });
+        }
+      });
+    }
+
+    function attachToConfirm() {
+      attachTo('confirm', function(message) {
+        let prompt = getTabModalPrompt();
+        var check = {value: false};
+        let args = ["[JavaScript Application]", message, _("alertCheckSuppressConfirm"),
+                    check];
+        let response = prompt.confirmCheck.apply(null, args);
+        if (check.value) {
+          attachTo('confirm', function(message) { 
+            throw(_("alertCheckConfirmsSuppressed"));
+          });
         } else {
           return response;
         }
-      }
-    },
-    attachToPrompt: function() {
-      document.getElementById('content').contentWindow.wrappedJSObject.prompt = function(prompt_text, default_input) {
-        var check = {value: false};   
-        var response = {value: default_input};
-        var success = alertcheck.vars.promptService.prompt(window, "[Javascript Application]",
-                              prompt_text, response, alertcheck.app.getString("alertCheckSuppressPrompt"),check);
-        //If the user checked the box, suppress prompts.
-        if (check.value) {
-          document.getElementById('content').contentWindow.wrappedJSObject.prompt = function() { 
-            throw(alertcheck.app.getString("alertCheckPromptsSuppressed"));
-          };
-        } else {
-          if(success) {
-            return response.value;
-          } else {
-            return null;
-          }
-        }
-      }    
-    },
-    getString: function(some_string) {
-      return alertcheck.vars.stringBundle.GetStringFromName(some_string);
+      });
     }
-  };
 
-  //Once the window loads, load alertCheck
-  window.addEventListener("load", alertcheck.app.onLoad, false);
- }
+    function attachToPrompt() {
+      attachTo('prompt', function(message, default_input) {
+        let prompt = getTabModalPrompt();
+        var check = {value: false};
+        var response = {value: default_input};
+        let args = ["[JavaScript Application]", message, response, _("alertCheckSuppressPrompt"),
+                    check];
+        let success = prompt.prompt.apply(null, args);
+        if (check.value) {
+          attachTo('prompt', function(message, default_input) { 
+            throw(_("alertCheckPromptsSuppressed"));
+          });
+        } else {
+          if (success) {
+            return response.value;
+          }
+          return null;
+        }
+      });
+    }
+
+    function getTabModalPrompt() {
+      let prompt = promptFactory.getPrompt(getWrappedJSObject().window,
+                                           Ci.nsIPrompt);
+      let bag = prompt.QueryInterface(Ci.nsIWritablePropertyBag2);
+      bag.setPropertyAsBool("allowTabModal", true);
+      return prompt;
+    }
+    window.addEventListener("load", onLoad, false);
+    window.addEventListener("unload", onUnload, false);
+  }();
 }
